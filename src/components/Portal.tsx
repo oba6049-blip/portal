@@ -396,9 +396,14 @@ export default function Portal({ preselectedCourse, clearPreselection }: PortalP
               </span>
             </span>
           </div>
-          {useLocalAuthFallback && (
-            <div className="text-[10px] bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 font-mono px-4 py-1.5 rounded-xl max-w-lg text-center leading-normal">
-              ⚠️ Supabase API variables are not configured in project secrets. We have automatically activated the secure local sandbox fallback so you can sign up or log in normally!
+          {(!isSupabaseConfigured || useLocalAuthFallback) && (
+            <div className="text-[10px] bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 font-mono px-4 py-2.5 rounded-xl max-w-lg text-center leading-normal space-y-1">
+              <p className="font-bold">⚠️ RUNNING IN LOCAL SANDBOX FALLBACK</p>
+              <p>The Supabase API environment variables are not detected in the current build context.</p>
+              <p className="text-[9px] text-amber-600/80 dark:text-amber-400/80 border-t border-amber-550/10 mt-1 pt-1 font-sans">
+                <strong>Deploying to Vercel?</strong> To sync with your real database, you must configure the following Environment Variables in your Vercel Project Settings:<br />
+                <code className="bg-black/20 px-1 py-0.5 rounded text-neutral-200 font-mono">VITE_SUPABASE_URL</code> and <code className="bg-black/20 px-1 py-0.5 rounded text-neutral-200 font-mono">VITE_SUPABASE_ANON_KEY</code>
+              </p>
             </div>
           )}
         </div>
