@@ -4,10 +4,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { RegistrationData } from './types';
 
-// Retrieve Vite-forwarded secrets or environment properties safely using any cast to bypass TypeScript module limits
-const schemaMeta = import.meta as any;
-const supabaseUrl = schemaMeta.env?.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = schemaMeta.env?.VITE_SUPABASE_ANON_KEY || '';
+// Retrieve Vite-forwarded secrets or environment properties safely
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 // Validate configured state safely before starting Supabase connection
 export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey && supabaseUrl !== "undefined" && supabaseAnonKey !== "undefined");
