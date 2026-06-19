@@ -1,0 +1,137 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Default-deny everything
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Registrations collection: Write-Only Sandbox originally, but allows logged-in students to read their own registrations securely
+    match /registrations/{registrationId} {
+      allow create: if isValidRegistrationCreate() && isValidId(registrationId);
+      allow read: if (request.auth != null && (
+        resource.data.email == request.auth.token.email || 
+        (resource.data.keys().hasAny(['studentUid']) && resource.data.studentUid == request.auth.uid)
+      )) || (request.auth != null && (request.auth.token.email == 'nuddywale@gmail.com' || request.auth.token.email == 'oba6049@gmail.com'));
+      allow update: if request.auth != null && (request.auth.token.email == 'nuddywale@gmail.com' || request.auth.token.email == 'oba6049@gmail.com');
+      allow delete: if request.auth != null && (request.auth.token.email == 'nuddywale@gmail.com' || request.auth.token.email == 'oba6049@gmail.com');
+    }
+
+    // Student profile endpoints: Owned and readable/writable only by the matching student
+    match /students/{studentId} {
+      allow create: if request.auth != null && request.auth.uid == studentId && isValidStudent(request.resource.data);
+      allow read: if (request.auth != null && request.auth.uid == studentId) || (request.auth != null && (request.auth.token.email == 'nuddywale@gmail.com' || request.auth.token.email == 'oba6049@gmail.com'));
+      allow update: if (request.auth != null && request.auth.uid == studentId && isValidStudentUpdate(request.resource.data)) || (request.auth != null && (request.auth.token.email == 'nuddywale@gmail.com' || request.auth.token.email == 'oba6049@gmail.com'));
+      allow delete: if request.auth != null && (request.auth.token.email == 'nuddywale@gmail.com' || request.auth.token.email == 'oba6049@gmail.com');
+    }
+
+    // Assignments collection: Students can submit & read theirs, Admin can read/update all
+    match /assignments/{assignmentId} {
+      allow create: if request.auth != null && isValidAssignmentCreate() && isValidId(assignmentId);
+      allow read: if (request.auth != null && (
+        resource.data.studentUid == request.auth.uid ||
+        resource.data.studentEmail == request.auth.token.email
+      )) || (request.auth != null && (request.auth.token.email == 'nuddywale@gmail.com' || request.auth.token.email == 'oba6049@gmail.com'));
+      allow update: if (request.auth != null && resource.data.studentUid == request.auth.uid && isValidAssignmentUpdate()) ||
+                    (request.auth != null && (request.auth.token.email == 'nuddywale@gmail.com' || request.auth.token.email == 'oba6049@gmail.com') && isValidAssignmentAdminUpdate());
+      allow delete: if request.auth != null && (request.auth.token.email == 'nuddywale@gmail.com' || request.auth.token.email == 'oba6049@gmail.com');
+    }
+
+    // Helper to validate identifier strings
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Student profile schema validation
+    function isValidStudent(data) {
+      return 'fullName' in data && data.fullName is string && data.fullName.size() > 0 && data.fullName.size() <= 100
+      && 'email' in data && data.email is string && data.email.size() > 0 && data.email.size() <= 100
+      && 'createdAt' in data && data.createdAt == request.time
+      && 'updatedAt' in data && data.updatedAt == request.time;
+    }
+
+    function isValidStudentUpdate(data) {
+      return 'fullName' in data && data.fullName is string && data.fullName.size() > 0 && data.fullName.size() <= 100
+      && 'email' in data && data.email is string && data.email.size() > 0 && data.email.size() <= 100
+      && 'updatedAt' in data && data.updatedAt == request.time;
+    }
+
+    // Comprehensive validation schema matching firebase-blueprint.json exactly
+    function isValidRegistrationCreate() {
+      let data = request.resource.data;
+      // Accept registration either with 16 keys (non-registered guests) or 17 keys if they include studentUid
+      return (
+        data.keys().hasAll([
+          'fullName', 'email', 'phone', 'gender', 'dateOfBirth',
+          'country', 'state', 'city', 'highestQualification',
+          'occupation', 'preferredCourse', 'learningMode',
+          'experienceLevel', 'learningGoals', 'referralSource', 'createdAt'
+        ]) && (data.keys().size() == 16 || (data.keys().size() == 17 && data.keys().hasAny(['studentUid'])))
+      )
+      && data.fullName is string && data.fullName.size() > 0 && data.fullName.size() <= 100
+      && data.email is string && data.email.size() > 0 && data.email.size() <= 100
+      && data.phone is string && data.phone.size() > 0 && data.phone.size() <= 30
+      && data.gender is string && (data.gender == 'Male' || data.gender == 'Female' || data.gender == 'Other' || data.gender == 'Prefer not to say')
+      && data.dateOfBirth is string && data.dateOfBirth.size() >= 8 && data.dateOfBirth.size() <= 30
+      && data.country is string && data.country.size() > 0 && data.country.size() <= 80
+      && data.state is string && data.state.size() > 0 && data.state.size() <= 80
+      && data.city is string && data.city.size() > 0 && data.city.size() <= 80
+      && data.highestQualification is string && data.highestQualification.size() > 0 && data.highestQualification.size() <= 100
+      && data.occupation is string && data.occupation.size() > 0 && data.occupation.size() <= 100
+      && data.preferredCourse is string && data.preferredCourse.size() > 0 && data.preferredCourse.size() <= 150
+      && data.learningMode is string && (data.learningMode == 'Online' || data.learningMode == 'Physical')
+      && data.experienceLevel is string && (data.experienceLevel == 'Beginner' || data.experienceLevel == 'Intermediate' || data.experienceLevel == 'Advanced')
+      && data.learningGoals is string && data.learningGoals.size() <= 1000
+      && data.referralSource is string && data.referralSource.size() <= 300
+      && data.createdAt == request.time
+      && (!data.keys().hasAny(['studentUid']) || (data.studentUid is string && data.studentUid.size() <= 128));
+    }
+
+    // Assignments validation functions
+    function isValidAssignmentCreate() {
+      let data = request.resource.data;
+      return data.keys().hasAll([
+        'studentUid', 'studentEmail', 'studentName', 'registrationId', 'courseName', 'vercelUrl', 'status', 'createdAt', 'updatedAt'
+      ]) && (data.keys().size() == 9 || (data.keys().size() == 11 && data.keys().hasAll(['githubUrl', 'notes'])))
+      && data.studentUid == request.auth.uid
+      && data.studentEmail == request.auth.token.email
+      && data.studentName is string && data.studentName.size() > 0 && data.studentName.size() <= 100
+      && data.registrationId is string && data.registrationId.size() <= 128
+      && data.courseName is string && data.courseName.size() > 0 && data.courseName.size() <= 150
+      && data.vercelUrl is string && data.vercelUrl.size() > 0 && data.vercelUrl.size() <= 500
+      && data.status == 'Pending'
+      && data.createdAt == request.time
+      && data.updatedAt == request.time
+      && (!data.keys().hasAny(['githubUrl']) || (data.githubUrl is string && data.githubUrl.size() <= 500))
+      && (!data.keys().hasAny(['notes']) || (data.notes is string && data.notes.size() <= 2000));
+    }
+
+    function isValidAssignmentUpdate() {
+      let data = request.resource.data;
+      let existingData = resource.data;
+      return data.studentUid == existingData.studentUid
+      && data.registrationId == existingData.registrationId
+      && data.courseName == existingData.courseName
+      && data.vercelUrl is string && data.vercelUrl.size() > 0 && data.vercelUrl.size() <= 500
+      && data.status == existingData.status
+      && data.createdAt == existingData.createdAt
+      && data.updatedAt == request.time
+      && (!data.keys().hasAny(['githubUrl']) || (data.githubUrl is string && data.githubUrl.size() <= 500))
+      && (!data.keys().hasAny(['notes']) || (data.notes is string && data.notes.size() <= 2000));
+    }
+
+    function isValidAssignmentAdminUpdate() {
+      let data = request.resource.data;
+      let existingData = resource.data;
+      return data.studentUid == existingData.studentUid
+      && data.registrationId == existingData.registrationId
+      && data.courseName == existingData.courseName
+      && data.vercelUrl == existingData.vercelUrl
+      && data.createdAt == existingData.createdAt
+      && (data.status == 'Pending' || data.status == 'Approved' || data.status == 'Needs Revision')
+      && data.updatedAt == request.time
+      && (!data.keys().hasAny(['feedback']) || (data.feedback is string && data.feedback.size() <= 2000));
+    }
+  }
+}

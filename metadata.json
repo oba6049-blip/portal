@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Textocode Student Registration Portal",
+  "description": "A premium and highly responsive landing page and registration portal for Textocode Academy, helping students learn AI, Cloud, Software Development, Data Analytics, and DevOps.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

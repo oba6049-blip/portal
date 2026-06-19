@@ -1,0 +1,192 @@
+{
+  "entities": {
+    "Registration": {
+      "title": "Registration",
+      "description": "A student registration request for Textocode Academy.",
+      "type": "object",
+      "properties": {
+        "fullName": {
+          "type": "string",
+          "description": "Full name of the student"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Email address of the student"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number with dynamic country code"
+        },
+        "gender": {
+          "type": "string",
+          "enum": ["Male", "Female", "Other", "Prefer not to say"]
+        },
+        "dateOfBirth": {
+          "type": "string",
+          "format": "date",
+          "description": "Student's date of birth"
+        },
+        "country": {
+          "type": "string",
+          "description": "Country of residence"
+        },
+        "state": {
+          "type": "string",
+          "description": "State/Region of residence"
+        },
+        "city": {
+          "type": "string",
+          "description": "City of residence"
+        },
+        "highestQualification": {
+          "type": "string",
+          "description": "Highest level of education completed"
+        },
+        "occupation": {
+          "type": "string",
+          "description": "Current occupation or student status"
+        },
+        "preferredCourse": {
+          "type": "string",
+          "description": "Name of the course the student wishes to register for"
+        },
+        "learningMode": {
+          "type": "string",
+          "enum": ["Online", "Physical"]
+        },
+        "experienceLevel": {
+          "type": "string",
+          "enum": ["Beginner", "Intermediate", "Advanced"]
+        },
+        "learningGoals": {
+          "type": "string",
+          "description": "Goals or reasons for taking the course"
+        },
+        "referralSource": {
+          "type": "string",
+          "description": "How the student heard about Textocode"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the registration was submitted"
+        }
+      },
+      "required": [
+        "fullName",
+        "email",
+        "phone",
+        "gender",
+        "dateOfBirth",
+        "country",
+        "state",
+        "city",
+        "highestQualification",
+        "occupation",
+        "preferredCourse",
+        "learningMode",
+        "experienceLevel"
+      ]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "A student profile holding user record metadata.",
+      "type": "object",
+      "properties": {
+        "fullName": {
+          "type": "string",
+          "description": "Student full name"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Email address of the student"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp of the profile"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last modifier timestamp"
+        }
+      },
+      "required": ["fullName", "email"]
+    },
+    "Assignment": {
+      "title": "Assignment",
+      "description": "An assignment submission containing a Vercel deployment link from a student.",
+      "type": "object",
+      "properties": {
+        "studentUid": {
+          "type": "string",
+          "description": "The UID of the student submitting the assignment"
+        },
+        "studentEmail": {
+          "type": "string",
+          "format": "email",
+          "description": "The email of the student"
+        },
+        "studentName": {
+          "type": "string",
+          "description": "The full name of the student"
+        },
+        "registrationId": {
+          "type": "string",
+          "description": "The associated registration course ID reference"
+        },
+        "courseName": {
+          "type": "string",
+          "description": "The name of the course"
+        },
+        "vercelUrl": {
+          "type": "string",
+          "description": "The deployed Vercel link submitted by the student"
+        },
+        "githubUrl": {
+          "type": "string",
+          "description": "Optional GitHub repository URL"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional notes from the student"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Pending", "Approved", "Needs Revision"],
+          "description": "Status of the assignment grading"
+        },
+        "feedback": {
+          "type": "string",
+          "description": "Feedback or grading comments from the administrator"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["studentUid", "studentEmail", "registrationId", "courseName", "vercelUrl", "status"]
+    }
+  },
+  "firestore": {
+    "/registrations/{registrationId}": {
+      "schema": "Registration",
+      "description": "Student registrations collection."
+    },
+    "/students/{studentId}": {
+      "schema": "Student",
+      "description": "Student profile details linked to auth UID."
+    },
+    "/assignments/{assignmentId}": {
+      "schema": "Assignment",
+      "description": "Student assignment submissions containing Vercel URLs"
+    }
+  }
+}
