@@ -31,7 +31,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [useLocalAuthFallback, setUseLocalAuthFallbackState] = useState<boolean>(() => {
-    return localStorage.getItem('textocode_auth_fallback') === 'true';
+    if (isSupabaseConfigured) {
+      localStorage.removeItem('textocode_auth_fallback');
+      return false;
+    }
+    return true;
   });
 
   const setUseLocalAuthFallback = (val: boolean) => {
@@ -192,15 +196,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     const cleanEmail = email.trim().toLowerCase();
     const cleanPassword = password.trim();
-    const isMasterAdmin = cleanEmail === 'nuddywale@gmail.com' && cleanPassword === 'subair009';
+    const isMasterAdmin = (cleanEmail === 'nuddywale@gmail.com' || cleanEmail === 'oba6049@gmail.com') && cleanPassword === 'subair009';
 
     try {
+      if (isSupabaseConfigured && supabase && !useLocalAuthFallback) {
+        try {
+          // Supabase sign-in (try first so they get a valid session for RLS)
+          const { data, error: signInErr } = await supabase.auth.signInWithPassword({
+            email: cleanEmail,
+            password: cleanPassword
+          });
+
+          if (signInErr) {
+            // If it's the master admin, we can swallow the error and fall back to local override
+            if (isMasterAdmin) {
+              console.warn("Supabase master admin sign-in failed, falling back to local override:", signInErr.message);
+            } else {
+              throw signInErr;
+            }
+          } else if (data.user) {
+            const userMeta = data.user.user_metadata || {};
+            const fullName = userMeta.fullName || userMeta.full_name || userMeta.name || 'System Admin (Nuddywale)';
+
+            setUser({
+              uid: data.user.id,
+              email: data.user.email || cleanEmail,
+              fullName: fullName
+            });
+            return;
+          }
+        } catch (supErr) {
+          if (!isMasterAdmin) {
+            throw supErr;
+          }
+        }
+      }
+
       if (isMasterAdmin) {
-        // Master admin override: log in immediately
+        // Master admin override: log in immediately as fallback
         const adminUser: StudentUser = {
           uid: 'master-admin-uid-999',
-          email: 'nuddywale@gmail.com',
-          fullName: 'System Admin (Nuddywale)'
+          email: cleanEmail,
+          fullName: cleanEmail === 'oba6049@gmail.com' ? 'System Admin (Oba)' : 'System Admin (Nuddywale)'
         };
         localStorage.setItem('textocode_logged_in_student', JSON.stringify(adminUser));
         setUser(adminUser);
@@ -208,24 +245,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (isSupabaseConfigured && supabase && !useLocalAuthFallback) {
-        // Supabase sign-in
-        const { data, error: signInErr } = await supabase.auth.signInWithPassword({
-          email: cleanEmail,
-          password: cleanPassword
-        });
-
-        if (signInErr) throw signInErr;
-
-        if (data.user) {
-          const userMeta = data.user.user_metadata || {};
-          const fullName = userMeta.fullName || userMeta.full_name || userMeta.name || 'Textocode Student';
-
-          setUser({
-            uid: data.user.id,
-            email: data.user.email || cleanEmail,
-            fullName: fullName
-          });
-        }
+        // This block is already fully handled above, keeping structure intact or bypassing
       } else {
         // Mock DB Login
         const localStudents = JSON.parse(localStorage.getItem('textocode_students_auth') || '[]');

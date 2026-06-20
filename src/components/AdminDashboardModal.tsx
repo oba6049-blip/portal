@@ -297,7 +297,7 @@ export default function AdminDashboardModal({ isOpen, onClose }: AdminDashboardM
             <div>
               <h3 className="text-xl font-bold text-white tracking-tight">Access Verification Required</h3>
               <p className="text-sm text-neutral-400 mt-1.5 leading-normal">
-                This area is designated exclusively for administrative management. Log in with the official credentials <span className="font-mono text-purple-400">nuddywale@gmail.com</span> with password <span className="font-mono text-purple-400">subair009</span> or use Google Identity auth.
+                This area is designated exclusively for administrative management. Log in with the official credentials <span className="font-mono text-purple-400">nuddywale@gmail.com</span> or <span className="font-mono text-purple-400">oba6049@gmail.com</span> with password <span className="font-mono text-purple-400">subair009</span> or use Google Identity auth.
               </p>
             </div>
 
